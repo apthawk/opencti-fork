@@ -1879,7 +1879,14 @@ export const elBatchIdsWithRelCount = async <T extends BasicStoreBase>(
   const types = elements.map((e) => e.type);
   const opts = { type: types, includeDeletedInDraft: true, relCount: true, baseData: true };
   const hits = await elFindByIds<T>(context, user, ids, opts) as T[];
-  return ids.map((id) => R.find((h) => h.internal_id === id, hits));
+  // Build a map from internal_id to hit for O(1) lookup
+  const hitsMap = new Map<string, T>();
+  for (const hit of hits) {
+    if (hit && (hit as any).internal_id) {
+      hitsMap.set((hit as any).internal_id, hit);
+    }
+  }
+  return ids.map((id) => hitsMap.get(id));
 };
 
 // Global search attributes are limited

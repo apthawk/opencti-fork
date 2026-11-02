@@ -82,6 +82,8 @@ const handleCacheForEntity = async (instance: BasicStoreCommon | BasicStoreCommo
       } else {
         logApp.debug('Simple reset cache for entity', { type });
         cache[type].values = undefined;
+        cache[type].valuesMap = undefined;
+        cache[type].valuesMap = undefined;
       }
     } else {
       // This entity type is not part of the caching system or it has not been initialized yet
@@ -185,12 +187,24 @@ export const getEntitiesListFromCache = async <T extends BasicStoreIdentifier | 
 export const getEntitiesMapFromCache = async <T extends BasicStoreIdentifier | StixObject>(
   context: AuthContext, user: AuthUser, type: string,
 ): Promise<Map<string | StixId, T>> => {
-  const data = await getEntitiesFromCache(context, user, type);
-  // Filters is already a map
-  if (type === ENTITY_TYPE_RESOLVED_FILTERS) {
-    return data as Map<string, T>; // map of <standard_id, instance>
+  const fromCache = cache[type];
+  // Return memoized map if available
+  if (fromCache && fromCache.valuesMap) {
+    return fromCache.valuesMap as Map<string | StixId, T>;
   }
-  return buildStoreEntityMap(data as BasicStoreIdentifier[]); // map of <id, instance> for all the instance ids (internal_id, standard_id, stix ids)
+  const data = await getEntitiesFromCache(context, user, type);
+  // Filters is already a map; cache it for consistency
+  if (type === ENTITY_TYPE_RESOLVED_FILTERS) {
+    if (fromCache) {
+      fromCache.valuesMap = data as Map<string | StixId, T>;
+    }
+    return data as Map<string | StixId, T>; // map of <standard_id, instance>
+  }
+  const map = buildStoreEntityMap(data as BasicStoreIdentifier[]);
+  if (fromCache) {
+    fromCache.valuesMap = map;
+  }
+  return map;
 };
 
 export const getEntityFromCache = async <T extends BasicStoreIdentifier>(context: AuthContext, user: AuthUser, type: string): Promise<T> => {
