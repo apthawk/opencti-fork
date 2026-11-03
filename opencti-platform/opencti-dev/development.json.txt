@@ -1,0 +1,13 @@
+{
+  "elasticsearch": {
+    "url": "http://localhost:9201",
+    "username": "admin",
+    "password": "GraceH00per!"
+  },
+  "smtp": {
+    "hostname": "localhost",
+    "use_ssl": false,
+    "rejectUnauthorized": false,
+    "port": 1025
+  }
+}
